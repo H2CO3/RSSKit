@@ -1,8 +1,4 @@
-<html>
-  <head>
-    <title>RSSKit - Documentation</title>
-  </head>
-<body>
+
 <h1>RSSKit</h1>
 <hr />
 <p>
@@ -18,5 +14,3 @@ RSSKit is an easy-to use iOS framework to make RSS feed processing simple. It co
 parser.delegate = theDelegateObject;</pre></tt></code></li>
   <li>Call <code><tt><pre>[parser parse];</pre></tt></code></li>
   <li>Implement the <tt>rssParser:parsedFeed:</tt> method in your delegate class. As the 2nd parameter it'll be passed an <tt>RSSFeed</tt> instance. The properties of this class are named meaningfully; the <tt>articles</tt> property will contain an <tt>NSArray</tt> of <tt>RSSEntry</tt> objects, representing the items/summaries of the feed, respectively (this class also has obviously-named properties).</li>
-</body>
-</html>
