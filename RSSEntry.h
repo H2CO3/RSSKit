@@ -7,21 +7,34 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "RSSAttachedMedia.h"
 
 
-@interface RSSEntry: NSObject <NSCopying> {
+@interface RSSEntry: NSObject {
 	NSString *title;
 	NSString *url;
 	NSString *uid;
 	NSString *date;
 	NSString *summary;
+	NSMutableArray *categories;
+	NSString *comments;
+	NSString *content;
+	NSString *copyright;
+	RSSAttachedMedia *attachedMedia;
+	NSString *author;
 }
 
-@property (retain) NSString *title;
-@property (retain) NSString *url;
-@property (retain) NSString *uid;
-@property (retain) NSString *date;
-@property (retain) NSString *summary;
+@property (nonatomic, retain) NSString *title;
+@property (nonatomic, retain) NSString *url;
+@property (nonatomic, retain) NSString *uid;
+@property (nonatomic, retain) NSString *date;
+@property (nonatomic, retain) NSString *summary;
+@property (nonatomic, retain) NSMutableArray *categories;
+@property (nonatomic, retain) NSString *comments;
+@property (nonatomic, retain) NSString *content;
+@property (nonatomic, retain) NSString *copyright;
+@property (nonatomic, retain) RSSAttachedMedia *attachedMedia;
+@property (nonatomic, retain) NSString *author;
 
 @end
 

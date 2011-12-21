@@ -15,7 +15,7 @@ LDFLAGS = -isysroot $(SYSROOT) \
 	  -lobjc \
 	  -framework Foundation
 	  
-OBJECTS = RSSFeed.o RSSEntry.o RSSParser.o
+OBJECTS = RSSFeed.o RSSEntry.o RSSParser.o RSSCloudService.o RSSAttachedMedia.o NSMutableString+RSSKit.o
 
 all: $(TARGET)
 

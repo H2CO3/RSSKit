@@ -16,16 +16,34 @@
 @synthesize uid;
 @synthesize date;
 @synthesize summary;
+@synthesize categories;
+@synthesize comments;
+@synthesize content;
+@synthesize copyright;
+@synthesize attachedMedia;
+@synthesize author;
 
-// NSCopying
-- (id) copyWithZone:(NSZone *)zone {
-	RSSEntry *copy = [[RSSEntry alloc] init];
-	copy.title = self.title;
-	copy.url = self.url;
-	copy.uid = self.uid;
-	copy.date = self.date;
-	copy.summary = self.summary;
-	return copy;
+- (id) init {
+	self = [super init];
+	NSMutableArray *theCategories = [[NSMutableArray alloc] init];
+	self.categories = theCategories;
+	[theCategories release];
+	return self;
+}
+
+- (void) dealloc {
+	self.title = NULL;
+	self.url = NULL;
+	self.uid = NULL;
+	self.date = NULL;
+	self.summary = NULL;
+	self.categories = NULL;
+	self.comments = NULL;
+	self.content = NULL;
+	self.copyright = NULL;
+	self.attachedMedia = NULL;
+	self.author = NULL;
+	[super dealloc];
 }
 
 @end

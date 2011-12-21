@@ -1,5 +1,5 @@
 Package: org.h2co3.rsskit
-Version: 0.1
+Version: 0.2
 Name: RSSKit
 Section: Development
 Architecture: iphoneos-arm
@@ -7,3 +7,4 @@ Author: Arpad Goretity (H2CO3) <arpad.goretity@gmail.com>
 Maintainer: Arpad Goretity (H2CO3) <arpad.goretity@gmail.com>
 Depiction: http://github.com/H2CO3/RSSKit
 Description: RSSKit is a simple opensource iOS framework to make development of RSS reader apps easy.
+

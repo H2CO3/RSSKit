@@ -18,13 +18,17 @@
 	NSString *url;
 	NSXMLParser *xmlParser;
 	NSMutableArray *tagStack;
+	NSMutableString *tagPath;
 	RSSFeed *feed;
 	RSSEntry *entry;
 	id <RSSParserDelegate> delegate;
 }
 
-@property (assign) id <RSSParserDelegate> delegate;
+@property (nonatomic, assign) id <RSSParserDelegate> delegate;
+@property (nonatomic, retain) NSString *url;
+@property (nonatomic, assign) BOOL synchronous;
 
+- (id) initWithUrl:(NSString *)theUrl synchronous:(BOOL)sync;
 - (id) initWithUrl:(NSString *)theUrl;
 - (void) parse;
 

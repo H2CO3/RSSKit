@@ -7,44 +7,68 @@
 //
 
 #import "RSSParser.h"
+#import "NSMutableString+RSSKit.h"
 
 
 @implementation RSSParser
 
 @synthesize delegate;
+@synthesize url;
+@synthesize synchronous;
+
+- (id) initWithUrl:(NSString *)theUrl synchronous:(BOOL)sync {
+	self = [super init];
+	self.url = theUrl;
+	self.synchronous = sync;
+	if (self.synchronous) {
+		NSURL *contentUrl = [[NSURL alloc] initWithString:self.url];
+		xmlParser = [[NSXMLParser alloc] initWithContentsOfURL:contentUrl];
+		[contentUrl release];
+		[xmlParser setDelegate:self];
+	}
+	return self;
+}
 
 - (id) initWithUrl:(NSString *)theUrl {
-	self = [super init];
-	url = [theUrl retain];
-	NSURL *contentUrl = [[NSURL alloc] initWithString:url];
-	xmlParser = [[NSXMLParser alloc] initWithContentsOfURL:contentUrl];
-	[contentUrl release];
-	[xmlParser setDelegate:self];
+	self = [self initWithUrl:theUrl synchronous:NO];
+	return self;
+}
+
+- (id) init {
+	self = [self initWithUrl:NULL];
 	return self;
 }
 
 - (void) dealloc {
 	[xmlParser setDelegate:NULL];
 	[xmlParser release];
-	[url release];
+	self.url = NULL;
 	[super dealloc];
 }
 
 // self
 
 - (void) parse {
+	if (!self.synchronous) {
+		NSURL *contentUrl = [[NSURL alloc] initWithString:self.url];
+		xmlParser = [[NSXMLParser alloc] initWithContentsOfURL:contentUrl];
+		[contentUrl release];
+		[xmlParser setDelegate:self];
+	}
 	[xmlParser parse];
 }
 
-// NSXMLParserDelegate (informal protocol)
+// NSXMLParserDelegate
 
 - (void) parserDidStartDocument:(NSXMLParser *)parser {
 	feed = [[RSSFeed alloc] init];
 	tagStack = [[NSMutableArray alloc] init];
+	tagPath = [[NSMutableString alloc] initWithString:@"/"];
 }
 
 - (void) parserDidEndDocument:(NSXMLParser *)parser {
 	[tagStack release];
+	[tagPath release];
 	if ([delegate respondsToSelector:@selector(rssParser:parsedFeed:)]) {
 		[delegate rssParser:self parsedFeed:feed];
 	}
@@ -53,6 +77,7 @@
 
 - (void) parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)error {
 	[tagStack release];
+	[tagPath release];
 	[feed release];
 	if ([delegate respondsToSelector:@selector(rssParser:errorOccurred:)]) {
 		[delegate rssParser:self errorOccurred:error];
@@ -72,87 +97,122 @@
 	// prepare to successively receive characters
 	// then push element onto stack
 	NSMutableDictionary *context = [[NSMutableDictionary alloc] init];
-	[context setObject:element forKey:@"tag"];
 	[context setObject:attributes forKey:@"attributes"];
 	NSMutableString *text = [[NSMutableString alloc] init];
 	[context setObject:text forKey:@"text"];
 	[text release];
 	[tagStack addObject:context];
 	[context release];
+	[tagPath appendPathComponent:element];
 }
 
 - (void) parser:(NSXMLParser *)parser didEndElement:(NSString *)element namespaceURI:(NSString *)namespaceURI qualifiedName:(NSString *)qualifiedName {
-	// pop
-	NSMutableDictionary *context = [[tagStack lastObject] retain];
+	NSMutableDictionary *context = [tagStack lastObject];
 	NSMutableString *text = [context objectForKey:@"text"];
 	NSDictionary *attributes = [context objectForKey:@"attributes"];
-	[tagStack removeLastObject];
-	// the top of the stack now is the parent tag
-	// of the current one. Examine them to see what to
-	// do with the built string.
-	NSMutableDictionary *parent = [tagStack lastObject];
-	NSString *parentTag = [parent objectForKey:@"tag"];
-	if ([parentTag isEqualToString:@"channel"] || [parentTag isEqualToString:@"feed"]) {
-		if ([element isEqualToString:@"title"]) {
-			feed.title = text;
-		} else if ([element isEqualToString:@"description"] || [element isEqualToString:@"subtitle"]) {
-			feed.description = text;
-		} else if ([element isEqualToString:@"link"]) {
-			// RSS 2.0 or Atom 1.0?
+	if ([tagPath isEqualToString:@"/rss/channel/title"] || [tagPath isEqualToString:@"/feed/title"]) {
+		feed.title = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/description"] || [tagPath isEqualToString:@"/feed/subtitle"]) {
+		feed.description = text;
+	} else if ([tagPath isEqualToString:@"/feed/id"]) {
+		feed.uid = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/link"] || [tagPath isEqualToString:@"/feed/link"]) {
+		// RSS 2.0 or Atom 1.0?
 			NSString *href = [attributes objectForKey:@"href"];
-			if (href != NULL) {
-				// Atom 1.0
-				feed.url = href;
-			} else {
-				// RSS 2.0
-				feed.url = text;
-			}
-		} else if ([element isEqualToString:@"lastBuildDate"] || [element isEqualToString:@"updated"]) {
-			feed.date = text;
-		} else if ([element isEqualToString:@"managingEditor"]) {
-			feed.author = text;
-		} else if ([element isEqualToString:@"item"] || [element isEqualToString:@"entry"]) {
-			RSSEntry *copy = [entry copy];
-			[entry release];
-			[feed.articles addObject:copy];
-			[copy release];
+		if (href) {
+			// Atom 1.0
+			feed.url = href;
+		} else {
+			// RSS 2.0
+			feed.url = text;
 		}
-	} else if ([parentTag isEqualToString:@"author"]) {
-		if ([element isEqualToString:@"name"]) {
-			if (feed.author == NULL) {
-				feed.author = text;
-			} else {
-				feed.author = [NSString stringWithFormat:@"%@ (%@)", text, feed.author];
-			}
-		} else if ([element isEqualToString:@"email"]) {
-			if (feed.author == NULL) {
-				feed.author = text;
-			} else {
-				feed.author = [NSString stringWithFormat:@"%@ (%@)", feed.author, text];
-			}
+	} else if ([tagPath isEqualToString:@"/rss/channel/language"]) {
+		feed.language = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/copyright"] || [tagPath isEqualToString:@"/feed/rights"]) {
+		feed.copyright = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/category"] || [tagPath isEqualToString:@"/feed/category"]) {
+		// RSS 2.0 or Atom 1.0?
+		NSString *term = [attributes objectForKey:@"term"];
+		if (term) {
+			// Atom 1.0
+			[feed.categories addObject:term];
+		} else {
+			// RSS 2.0
+			[feed.categories addObject:text];
 		}
-	} else if ([parentTag isEqualToString:@"item"] || [parentTag isEqualToString:@"entry"]) {
-		if ([element isEqualToString:@"title"]) {
-			entry.title = text;
-		} else if ([element isEqualToString:@"link"]) {
-			// RSS 2.0 or Atom 1.0?
-			NSString *href = [attributes objectForKey:@"href"];
-			if (href != NULL) {
-				// Atom 1.0
-				entry.url = href;
-			} else {
-				// RSS 2.0
-				entry.url = text;
-			}
-		} else if ([element isEqualToString:@"guid"] || [element isEqualToString:@"id"]) {
-			entry.uid = text;
-		} else if ([element isEqualToString:@"pubDate"] || [element isEqualToString:@"updated"]) {
-			entry.date = text;
-		} else if ([element isEqualToString:@"description"] || [element isEqualToString:@"summary"]) {
-			entry.summary = text;
+		
+	} else if ([tagPath isEqualToString:@"/rss/channel/generator"] || [tagPath isEqualToString:@"/feed/generator"]) {
+		feed.generator = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/ttl"]) {
+		feed.validTime = [text floatValue];
+	} else if ([tagPath isEqualToString:@"/rss/channel/image/url"] || [tagPath isEqualToString:@"/feed/icon"]) {
+		feed.iconUrl = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/cloud"]) {
+		RSSCloudService *cloudService = [[RSSCloudService alloc] init];
+		cloudService.domain = [attributes objectForKey:@"domain"];
+		cloudService.port = [[attributes objectForKey:@"port"] intValue];
+		cloudService.path = [attributes objectForKey:@"path"];
+		cloudService.procedure = [attributes objectForKey:@"registerProcedure"];
+		cloudService.protocol = [attributes objectForKey:@"protocol"];
+		feed.cloudService = cloudService;
+		[cloudService release];
+	} else if ([tagPath isEqualToString:@"/rss/channel/lastBuildDate"] || [tagPath isEqualToString:@"/feed/updated"]) {
+		feed.date = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/managingEditor"]) {
+		feed.author = text;
+	} else if ([tagPath isEqualToString:@"/feed/author/name"]) {
+		feed.author = feed.author ? [NSString stringWithFormat:@"%@ (%@)", text, feed.author] : text;
+	} else if ([tagPath isEqualToString:@"/feed/author/email"]) {
+		feed.author = feed.author ? [NSString stringWithFormat:@"%@ (%@)", feed.author, text] : text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/title"] || [tagPath isEqualToString:@"/feed/entry/title"]) {
+		entry.title = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/link"] || [tagPath isEqualToString:@"/feed/entry/link"]) {
+		// RSS 2.0 or Atom 1.0?
+		NSString *href = [attributes objectForKey:@"href"];
+		if (href) {
+			// Atom 1.0
+			entry.url = href;
+		} else {
+			// RSS 2.0
+			entry.url = text;
 		}
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/description"] || [tagPath isEqualToString:@"/feed/entry/summary"]) {
+		entry.summary = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/category"] || [tagPath isEqualToString:@"/feed/entry/category"]) {
+		// RSS 2.0 or Atom 1.0?
+		NSString *term = [attributes objectForKey:@"term"];
+		if (term) {
+			// Atom 1.0
+			[entry.categories addObject:term];
+		} else {
+			// RSS 2.0
+			[entry.categories addObject:text];
+		}
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/comments"] || [tagPath isEqualToString:@""]) {
+		entry.comments = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/author"] || [tagPath isEqualToString:@"/feed/entry/author/name"]) {
+		entry.author = text;
+	} else if ([tagPath isEqualToString:@"/feed/entry/content"]) {
+		entry.content = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/enclosure"] || [tagPath isEqualToString:@""]) {	
+		RSSAttachedMedia *media = [[RSSAttachedMedia alloc] init];
+		media.url = [attributes objectForKey:@"url"];
+		media.length = [[attributes objectForKey:@"length"] intValue];
+		media.type = [attributes objectForKey:@"type"];
+		entry.attachedMedia = media;
+		[media release];
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/guid"] || [tagPath isEqualToString:@"/feed/entry/id"]) {
+		entry.uid = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/pubDate"] || [tagPath isEqualToString:@"/feed/entry/updated"]) {
+		entry.date = text;
+	} else if ([tagPath isEqualToString:@"/feed/entry/rights"]) {
+		entry.copyright = text;
+	} else if ([tagPath isEqualToString:@"/rss/channel/item"] || [tagPath isEqualToString:@"/feed/entry"]) {
+		[feed.articles addObject:entry];
+		[entry release];
 	}
-	[context release];
+	[tagStack removeLastObject];
+	[tagPath deleteLastPathComponent];
 }
 
 - (void) parser:(NSXMLParser *)parser foundCharacters:(NSString *)string {
