@@ -192,9 +192,9 @@
 		entry.comments = text;
 	} else if ([tagPath isEqualToString:@"/rss/channel/item/author"] || [tagPath isEqualToString:@"/feed/entry/author/name"]) {
 		entry.author = text;
-	} else if ([tagPath isEqualToString:@"/feed/entry/content"]) {
+	} else if ([tagPath isEqualToString:@"/feed/entry/content"] || [tagPath isEqualToString:@"/rss/channel/item/content:encoded"]) {
 		entry.content = text;
-	} else if ([tagPath isEqualToString:@"/rss/channel/item/enclosure"] || [tagPath isEqualToString:@""]) {	
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/enclosure"]) {	
 		RSSAttachedMedia *media = [[RSSAttachedMedia alloc] init];
 		media.url = [attributes objectForKey:@"url"];
 		media.length = [[attributes objectForKey:@"length"] intValue];
