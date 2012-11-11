@@ -156,7 +156,7 @@
 		cloudService.protocol = [attributes objectForKey:@"protocol"];
 		feed.cloudService = cloudService;
 		[cloudService release];
-	} else if ([tagPath isEqualToString:@"/rss/channel/lastBuildDate"] || [tagPath isEqualToString:@"/feed/updated"]) {
+	} else if ([tagPath isEqualToString:@"/rss/channel/lastBuildDate"] || [tagPath isEqualToString:@"/rss/channel/dc:date"] || [tagPath isEqualToString:@"/feed/updated"]) {
 		feed.date = text;
 	} else if ([tagPath isEqualToString:@"/rss/channel/managingEditor"]) {
 		feed.author = text;
@@ -203,7 +203,7 @@
 		[media release];
 	} else if ([tagPath isEqualToString:@"/rss/channel/item/guid"] || [tagPath isEqualToString:@"/feed/entry/id"]) {
 		entry.uid = text;
-	} else if ([tagPath isEqualToString:@"/rss/channel/item/pubDate"] || [tagPath isEqualToString:@"/feed/entry/updated"]) {
+	} else if ([tagPath isEqualToString:@"/rss/channel/item/pubDate"] || [tagPath isEqualToString:@"/rss/channel/item/dc:date"] || [tagPath isEqualToString:@"/feed/entry/updated"]) {
 		entry.date = text;
 	} else if ([tagPath isEqualToString:@"/feed/entry/rights"]) {
 		entry.copyright = text;
