@@ -14,7 +14,7 @@
 @protocol RSSParserDelegate;
 
 
-@interface RSSParser: NSObject {
+@interface RSSParser: NSObject <NSXMLParserDelegate> {
 	NSString *url;
 	NSXMLParser *xmlParser;
 	NSMutableArray *tagStack;
