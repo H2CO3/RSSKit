@@ -12,12 +12,15 @@ RSSKit is an easy-to use iOS framework to make RSS feed processing simple. It co
   `@interface MyParserDelegate: NSObject <RSSParserDelegate>`
 
 1. Instantiate an RSSParser object using an NSString with an URL containing a valid RSS/Atom feed; e. g.
-  `RSSParser *parser = [[RSSParser alloc] initWithUrl:@&quot;http://example.com/feed&quot; synchronous:NO];`
+  `RSSParser *parser = [[RSSParser alloc] initWithUrl:@"http://example.com/feed" synchronous:NO];`
 
-1. Set an instance of your freshly declared deleate class as the parser's delegate, that is: `MyParserDelegate *theDelegateObject = [[MyParserDelegate alloc] init];
-parser.delegate = theDelegateObject;`
+1. Set an instance of your freshly declared deleate class as the parser's delegate, that is:
+   ```objc
+   MyParserDelegate *theDelegateObject = [[MyParserDelegate alloc] init];
+   parser.delegate = theDelegateObject;
+   ```
 
 1. Call `[parser parse];`
 
-1. Implement the rssParser:parsedFeed: method in your delegate class. As the 2nd parameter it'll be passed an `RSSFeed` instance. The properties of this class are named meaningfully; the articles property will contain an `NSArray` of `RSSEntry` objects, representing the items/summaries of the feed, respectively (this class also has obviously-named properties).
+1. Implement the `rssParser:parsedFeed:` method in your delegate class. As the 2nd parameter it'll be passed an `RSSFeed` instance. The properties of this class are named meaningfully; the articles property will contain an `NSArray` of `RSSEntry` objects, representing the items/summaries of the feed, respectively (this class also has obviously-named properties).
   
